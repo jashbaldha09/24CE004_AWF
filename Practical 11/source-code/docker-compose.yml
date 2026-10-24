@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Service 1: MongoDB Database
+  mongodb:
+    image: mongo:6.0-alpine
+    container_name: awf_mongodb_container
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+  # Service 2: Node.js / Express Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: awf_backend_container
+    restart: always
+    ports:
+      - '5000:5000'
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/taskmanager_db
+      - JWT_SECRET=supersecret_jwt_key_2026
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  # Service 3: React Frontend (Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: awf_frontend_container
+    restart: always
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+# Persistent named volume
+volumes:
+  mongo-data:
+    driver: local
+
+# Internal user-defined bridge network
+networks:
+  app-network:
+    driver: bridge
